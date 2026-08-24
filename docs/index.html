@@ -192,3 +192,649 @@ The public artifact intentionally avoids private client information, private que
 **Directional:** potential usefulness of ranking signals for review prioritization.
 
 **Not claimed:** guaranteed future search-performance prediction or causal explanation.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Predicting Search-Performance Decline | FlyRank Research</title>
+
+  <meta name="description"
+        content="A research artifact exploring search-performance decline detection and content prioritization using the FlyRank ML Internship dataset.">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.7;
+      color: #172033;
+      background: #f6f8fb;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 80px 20px;
+    }
+
+    .hero {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 7px 13px;
+      border: 1px solid #64748b;
+      border-radius: 999px;
+      font-size: 13px;
+      margin-bottom: 24px;
+      color: #cbd5e1;
+    }
+
+    h1 {
+      font-size: clamp(38px, 6vw, 64px);
+      line-height: 1.1;
+      max-width: 850px;
+      margin-bottom: 24px;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      color: #cbd5e1;
+      font-size: 19px;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 50px 20px 100px;
+    }
+
+    section {
+      background: white;
+      padding: 40px;
+      margin-bottom: 28px;
+      border-radius: 16px;
+      box-shadow: 0 5px 25px rgba(15, 23, 42, 0.06);
+    }
+
+    h2 {
+      font-size: 30px;
+      margin-bottom: 22px;
+      color: #111827;
+    }
+
+    h3 {
+      margin: 28px 0 12px;
+      color: #1e293b;
+    }
+
+    p {
+      margin-bottom: 16px;
+    }
+
+    ul {
+      margin: 15px 0 20px 25px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .abstract {
+      font-size: 18px;
+      background: #eef2ff;
+      border-left: 5px solid #4f46e5;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin: 25px 0;
+    }
+
+    .metric {
+      padding: 22px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 28px;
+      color: #111827;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 14px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 3px 6px;
+      border-radius: 5px;
+      font-size: 0.9em;
+    }
+
+    .warning {
+      background: #fff7ed;
+      border-left: 5px solid #f97316;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .recommendation {
+      border-left: 4px solid #64748b;
+      padding: 15px 20px;
+      margin: 15px 0;
+      background: #f8fafc;
+    }
+
+    .principle {
+      font-size: 20px;
+      font-weight: 700;
+      padding: 24px;
+      background: #111827;
+      color: white;
+      border-radius: 12px;
+      margin-top: 25px;
+    }
+
+    a {
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
+    footer {
+      background: #111827;
+      color: #cbd5e1;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    footer a {
+      color: white;
+    }
+
+    @media (max-width: 650px) {
+      section {
+        padding: 25px;
+      }
+
+      header {
+        padding: 55px 20px;
+      }
+
+      h2 {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="hero">
+    <div class="tag">FlyRank ML Internship · Research Artifact</div>
+
+    <h1>
+      Predicting Search-Performance Decline for Content Prioritization
+    </h1>
+
+    <p class="subtitle">
+      A practical investigation into whether historical page-level
+      search-performance signals can support prioritizing pages for human review.
+    </p>
+  </div>
+</header>
+
+<main>
+
+  <!-- ABSTRACT -->
+  <section class="abstract">
+    <h2>Abstract</h2>
+
+    <p>
+      This study asks whether historical page-level search-performance signals
+      can support the prioritization of pages that may require review.
+      The project constructs a transparent baseline ranking and investigates
+      a Decision Tree classification approach for identifying pages associated
+      with declining performance.
+      The baseline ranks 30,000 anonymized page records using search demand,
+      impressions, CTR opportunity, content age, and average position, while
+      the modeling workflow excludes target-defining fields from the feature set.
+      The available project artifacts establish the baseline queue and leakage
+      controls, but the Decision Tree training and final model-versus-baseline
+      evaluation were not successfully reproduced in the available notebook run,
+      so no unsupported model performance number is reported.
+      The resulting artifact is therefore framed as directional decision support
+      for prioritizing human review rather than as a guaranteed predictor of
+      future search performance.
+    </p>
+  </section>
+
+
+  <!-- INTRODUCTION -->
+  <section>
+    <h2>1. Introduction / Problem Statement</h2>
+
+    <p>
+      Content teams may have many pages that could potentially benefit from
+      review while available resources for detailed investigation are limited.
+    </p>
+
+    <p>
+      This project asks whether historical page-level search-performance
+      signals can support a ranked review queue.
+    </p>
+
+    <p>
+      The goal is not to automatically change content. Instead, the system is
+      intended to help a reviewer decide which pages deserve attention first.
+    </p>
+  </section>
+
+
+  <!-- DATA -->
+  <section>
+    <h2>2. Data</h2>
+
+    <p>
+      The analysis uses the anonymized FlyRank ML Internship dataset.
+    </p>
+
+    <div class="metric-grid">
+      <div class="metric">
+        <strong>30,000</strong>
+        Page-level records
+      </div>
+
+      <div class="metric">
+        <strong>44</strong>
+        Dataset columns
+      </div>
+
+      <div class="metric">
+        <strong>5</strong>
+        Baseline signals
+      </div>
+    </div>
+
+    <h3>Baseline Features</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Weight</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr>
+          <td>Search volume</td>
+          <td>30%</td>
+        </tr>
+
+        <tr>
+          <td>90-day impressions</td>
+          <td>25%</td>
+        </tr>
+
+        <tr>
+          <td>CTR opportunity</td>
+          <td>20%</td>
+        </tr>
+
+        <tr>
+          <td>Content age</td>
+          <td>15%</td>
+        </tr>
+
+        <tr>
+          <td>Average position</td>
+          <td>10%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Leakage Exclusions</h3>
+
+    <p>
+      The following fields are treated as leakage-risk fields and are excluded
+      from predictive features:
+    </p>
+
+    <ul>
+      <li><code>is_declining_label</code></li>
+      <li><code>trend_direction</code></li>
+      <li><code>trend_pct</code></li>
+    </ul>
+
+    <p>
+      The Week-4 audit found no future-window columns and no product-flag
+      columns.
+    </p>
+
+    <p>
+      Private client information, private queries, credentials, and other
+      non-public information are excluded from this public artifact.
+    </p>
+
+    <p>
+      The available notebook evidence does not establish a specific dataset
+      release identifier or exact calendar date window, so these details are
+      not inferred or invented.
+    </p>
+  </section>
+
+
+  <!-- METHODOLOGY -->
+  <section>
+    <h2>3. Methodology</h2>
+
+    <h3>Baseline</h3>
+
+    <p>
+      The baseline is a transparent weighted ranking based on search opportunity,
+      impressions, CTR opportunity, content age, and average position.
+    </p>
+
+    <h3>Machine-Learning Approach</h3>
+
+    <p>
+      A Decision Tree classifier was selected because the task uses a binary
+      decline label and the model can capture non-linear relationships while
+      remaining relatively interpretable.
+    </p>
+
+    <h3>Validation</h3>
+
+    <p>
+      The intended evaluation compares the model with the Week-4 baseline using
+      the same evaluation setup. A grouped/client-level split is also considered
+      as a more conservative validation design because a random row split can
+      allow related records from the same client to appear in both training and
+      evaluation data.
+    </p>
+
+    <h3>Leakage Control</h3>
+
+    <p>
+      Target-defining fields are excluded from the feature set. Leakage control
+      is treated as a core requirement of the modeling workflow.
+    </p>
+  </section>
+
+
+  <!-- RESULTS -->
+  <section>
+    <h2>4. Results</h2>
+
+    <h3>Verified Baseline Result</h3>
+
+    <p>
+      The Week-4 baseline successfully ranked all
+      <strong>30,000 records</strong>.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Baseline Score</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>0.872991</td>
+        </tr>
+
+        <tr>
+          <td>2</td>
+          <td>0.871854</td>
+        </tr>
+
+        <tr>
+          <td>3</td>
+          <td>0.871525</td>
+        </tr>
+
+        <tr>
+          <td>4</td>
+          <td>0.869534</td>
+        </tr>
+
+        <tr>
+          <td>5</td>
+          <td>0.869047</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Model Evaluation Status</h3>
+
+    <div class="warning">
+      <strong>Honest result framing:</strong>
+      The available Week-5 and Week-6 notebook artifacts document the Decision
+      Tree methodology and validation design, but the model training and final
+      comparative evaluation were not successfully reproduced in the captured
+      notebook runs.
+    </div>
+
+    <p style="margin-top: 20px;">
+      Therefore, this paper does not report an unsupported Precision@50 value
+      or claim that the model outperformed the baseline.
+    </p>
+
+    <p>
+      This is an intentional research-safety choice: a result is reported only
+      when supported by an executed evaluation.
+    </p>
+  </section>
+
+
+  <!-- LIMITATIONS -->
+  <section>
+    <h2>5. Limitations & Honest Framing</h2>
+
+    <ul>
+      <li>
+        The final Decision Tree evaluation was not successfully reproduced.
+      </li>
+
+      <li>
+        The baseline is a prioritization heuristic, not a causal model.
+      </li>
+
+      <li>
+        Historical signals do not establish why a page declines.
+      </li>
+
+      <li>
+        Results may not generalize to different datasets, clients, or time periods.
+      </li>
+
+      <li>
+        The target definition represents an observable trend rather than complete
+        content quality.
+      </li>
+
+      <li>
+        The ranking should be combined with human judgment.
+      </li>
+    </ul>
+
+    <p>
+      The appropriate interpretation is
+      <strong>directional decision support</strong>,
+      not guaranteed future prediction.
+    </p>
+  </section>
+
+
+  <!-- RECOMMENDATIONS -->
+  <section>
+    <h2>6. Ranked Recommendations</h2>
+
+    <div class="recommendation">
+      <strong>1. Prioritize high-scoring pages</strong>
+      <p>
+        Use the ranked queue to identify pages that deserve earlier review.
+      </p>
+    </div>
+
+    <div class="recommendation">
+      <strong>2. Investigate the underlying signals</strong>
+      <p>
+        Review search demand, impressions, CTR, content age, position, and other
+        available signals.
+      </p>
+    </div>
+
+    <div class="recommendation">
+      <strong>3. Require human confirmation</strong>
+      <p>
+        A ranking should guide investigation, not automatically trigger a
+        content change.
+      </p>
+    </div>
+
+    <div class="recommendation">
+      <strong>4. Avoid automated irreversible actions</strong>
+      <p>
+        Do not automatically rewrite, delete, publish, or modify content based
+        only on a model score.
+      </p>
+    </div>
+
+    <div class="recommendation">
+      <strong>5. Re-evaluate periodically</strong>
+      <p>
+        Monitor evaluation performance and reconsider the model when data
+        distributions or page types change.
+      </p>
+    </div>
+
+    <div class="principle">
+      Use the model or ranking to prioritize human attention,
+      not replace human judgment.
+    </div>
+  </section>
+
+
+  <!-- REPRODUCIBILITY -->
+  <section>
+    <h2>7. Reproducibility</h2>
+
+    <p>Relevant project notebooks include:</p>
+
+    <ul>
+      <li><code>w04_baseline_score.ipynb</code></li>
+      <li><code>w05_model.ipynb</code></li>
+      <li><code>w06_validation_audit.ipynb</code></li>
+      <li><code>w07_action_playbook.ipynb</code></li>
+      <li><code>capstone.ipynb</code></li>
+    </ul>
+
+    <p>
+      The Week-4 baseline output is:
+      <code>work/outputs/baseline_action_score.csv</code>
+    </p>
+
+    <p>
+      The research artifact should be interpreted together with the assumptions
+      and limitations documented in these notebooks.
+    </p>
+  </section>
+
+
+  <!-- ARTIFACTS -->
+  <section>
+    <h2>8. Artifacts</h2>
+
+    <p>The research artifact includes:</p>
+
+    <ul>
+      <li>Baseline scoring methodology</li>
+      <li>Ranked review queue</li>
+      <li>Leakage audit</li>
+      <li>Validation methodology</li>
+      <li>Action playbook</li>
+    </ul>
+
+    <p>
+      These artifacts are intended to make the analysis inspectable and
+      reproducible rather than presenting the model as a black-box decision
+      maker.
+    </p>
+  </section>
+
+
+  <!-- ACKNOWLEDGMENTS -->
+  <section>
+    <h2>9. Acknowledgments & Data Credit</h2>
+
+    <p>
+      This work was completed as part of the FlyRank ML Internship track and
+      uses the <strong>FlyRank ML Internship dataset</strong>.
+    </p>
+
+    <p>
+      Data credit:
+      <a href="https://flyrank.ai"
+         target="_blank"
+         rel="noopener noreferrer">
+        FlyRank
+      </a>
+    </p>
+
+    <p>
+      The public artifact intentionally avoids private client information,
+      private queries, credentials, and other non-public material.
+    </p>
+  </section>
+
+</main>
+
+
+<footer>
+  <p>
+    FlyRank ML Internship · Research Artifact
+  </p>
+
+  <p>
+    Observed · Measured · Directional · Decision-support
+  </p>
+</footer>
+
+</body>
+</html>
